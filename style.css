@@ -1,0 +1,109 @@
+/* === Editsome Modern Theme === */
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f9fdfb;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header {
+  background-color: #00b279;
+  color: white;
+  text-align: center;
+  padding: 2rem 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  letter-spacing: 1px;
+}
+
+header p {
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.upload-box {
+  border: 3px dashed #00b279;
+  border-radius: 15px;
+  padding: 2rem;
+  text-align: center;
+  background-color: #ffffff;
+  width: 90%;
+  max-width: 500px;
+  transition: 0.3s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.upload-box:hover {
+  background-color: #eafff4;
+  transform: translateY(-3px);
+}
+
+.upload-btn {
+  background-color: #00b279;
+  color: white;
+  padding: 0.7rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  display: inline-block;
+  margin-top: 10px;
+  transition: 0.2s;
+}
+
+.upload-btn:hover {
+  background-color: #009664;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+#mergeBtn {
+  margin-top: 1.5rem;
+  background-color: #00b279;
+  color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+#mergeBtn:hover {
+  background-color: #009664;
+}
+
+#statusMsg {
+  margin-top: 1rem;
+  color: #00794d;
+  font-weight: bold;
+}
+
+footer {
+  text-align: center;
+  background: #f1f1f1;
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #555;
+}
