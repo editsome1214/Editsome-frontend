@@ -47,29 +47,26 @@
     <button id="addText">Add Text</button>
     <button id="addCheck">Add ✔</button>
     <button id="addCross">Add ❌</button>
-    <button id="addSign">Add Signature</button>
-    <button id="clearCanvas">Clear Signature</button>
+    <button id="drawSign">Draw Signature</button>
+    <button id="clearCanvas">Clear Drawing</button>
     <button id="savePdf">Save Edited PDF</button>
   </div>
 
-  <canvas id="pdfCanvas" style="border:1px solid #ccc; display:block; margin: 0 auto;"></canvas>
+  <canvas id="pdfCanvas" style="border:1px solid #ccc; display:block; margin: 0 auto; cursor: crosshair;"></canvas>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
   <script>
     const fileInput = document.getElementById('pdfUpload');
     const canvas = document.getElementById('pdfCanvas');
     const ctx = canvas.getContext('2d');
-
-    let pdfDoc = null;
-    let currentPage = 1;
-    let scale = 1.3;
-    let edits = [];
+    let pdfDoc = null, currentPage = 1, scale = 1.2;
+    let isDrawing = false, drawingMode = false;
 
     fileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       const fileURL = URL.createObjectURL(file);
       const pdf = await pdfjsLib.getDocument(fileURL).promise;
       pdfDoc = pdf;
@@ -81,38 +78,67 @@
       const viewport = page.getViewport({ scale });
       canvas.height = viewport.height;
       canvas.width = viewport.width;
-
-      const renderContext = {
-        canvasContext: ctx,
-        viewport: viewport
-      };
+      const renderContext = { canvasContext: ctx, viewport: viewport };
       await page.render(renderContext).promise;
     }
 
+    // Add annotations
     document.getElementById('addText').addEventListener('click', () => addAnnotation('text'));
     document.getElementById('addCheck').addEventListener('click', () => addAnnotation('check'));
     document.getElementById('addCross').addEventListener('click', () => addAnnotation('cross'));
-    document.getElementById('addSign').addEventListener('click', () => addAnnotation('sign'));
 
     function addAnnotation(type) {
-      canvas.addEventListener('click', function placeAnnotation(event) {
-        const x = event.offsetX;
-        const y = event.offsetY;
+      canvas.addEventListener('click', function place(event) {
+        const x = event.offsetX, y = event.offsetY;
         ctx.font = "16px Arial";
-        if (type === 'text') ctx.fillText("Your text here", x, y);
+        ctx.fillStyle = "black";
+        if (type === 'text') {
+          const text = prompt("Enter text:");
+          if (text) ctx.fillText(text, x, y);
+        }
         if (type === 'check') ctx.fillText("✔", x, y);
         if (type === 'cross') ctx.fillText("❌", x, y);
-        if (type === 'sign') ctx.fillText("✍ Your Signature", x, y);
-        canvas.removeEventListener('click', placeAnnotation);
+        canvas.removeEventListener('click', place);
       });
     }
+
+    // Signature Drawing
+    document.getElementById('drawSign').addEventListener('click', () => {
+      drawingMode = true;
+      alert("Draw your signature on the PDF!");
+    });
+
+    canvas.addEventListener('mousedown', e => {
+      if (!drawingMode) return;
+      isDrawing = true;
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      if (isDrawing && drawingMode) {
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      isDrawing = false;
+      ctx.closePath();
+    });
 
     document.getElementById('clearCanvas').addEventListener('click', () => {
       renderPage(currentPage);
     });
 
+    // Save the edited PDF
     document.getElementById('savePdf').addEventListener('click', async () => {
-      alert("Saving feature coming next!");
+      const link = document.createElement('a');
+      link.download = 'edited.pdf';
+      link.href = canvas.toDataURL('application/pdf');
+      link.click();
     });
   </script>
 </body>
