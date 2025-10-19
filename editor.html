@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit PDF - Editsome</title>
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<style>
+  body { font-family: Arial; text-align: center; background: #f9f9f9; }
+  #canvas { border: 1px solid #ccc; width: 400px; height: 200px; background: white; }
+</style>
+</head>
+<body>
+
+<h2>Edit & Sign Your PDF</h2>
+
+<input type="file" id="pdfFile" accept="application/pdf">
+<br><br>
+<canvas id="canvas"></canvas><br>
+<button id="clear">Clear Signature</button><br><br>
+<button id="addSignature">Add Signature to PDF</button>
+
+<script>
+const canvas = document.getElementById("canvas");
+const signaturePad = new SignaturePad(canvas);
+
+document.getElementById("clear").onclick = () => signaturePad.clear();
+
+document.getElementById("addSignature").onclick = async () => {
+  const file = document.getElementById("pdfFile").files[0];
+  if (!file) return alert("Please upload a PDF first!");
+
+  const pdfBytes = await file.arrayBuffer();
+  const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+  const page = pdfDoc.getPage(0);
+
+  const signatureImage = signaturePad.toDataURL();
+  const pngImage = await pdfDoc.embedPng(signatureImage);
+  const { width, height } = page.getSize();
+
+  page.drawImage(pngImage, {
+    x: width / 2 - 100,
+    y: 100,
+    width: 200,
+    height: 80,
+  });
+
+  const updatedPdf = await pdfDoc.save();
+  const blob = new Blob([updatedPdf], { type: "application/pdf" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "signed.pdf";
+  link.click();
+};
+</script>
+</body>
+</html>
