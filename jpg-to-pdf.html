@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Convert JPG to PDF</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<h2>Convert JPG to PDF</h2>
+<input type="file" id="imageInput" accept="image/jpeg, image/png">
+<button id="convertBtn">Convert</button>
+
+<script>
+document.getElementById("convertBtn").addEventListener("click", async () => {
+  const file = document.getElementById("imageInput").files[0];
+  if (!file) return alert("Please select an image");
+
+  const imgData = await file.arrayBuffer();
+  const blob = new Blob([imgData]);
+  const imageUrl = URL.createObjectURL(blob);
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+  pdf.addImage(imageUrl, "JPEG", 10, 10, 180, 160);
+  pdf.save("converted.pdf");
+});
+</script>
+</body>
+</html>
