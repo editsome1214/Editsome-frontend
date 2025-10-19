@@ -54,138 +54,169 @@
     <canvas id="pdfCanvas" style="border:1px solid #ccc;"></canvas>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
-  <script>
-    const fileInput = document.getElementById('pdfUpload');
-    const canvas = document.getElementById('pdfCanvas');
-    const ctx = canvas.getContext('2d');
-    const container = document.getElementById('pdfContainer');
-    let pdfDoc = null, currentPage = 1, scale = 1.2;
-    let drawing = false;
+<script>
+  const fileInput = document.getElementById('pdfUpload');
+  const canvas = document.getElementById('pdfCanvas');
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('pdfContainer');
+  let pdfDoc = null, currentPage = 1, scale = 1.2;
+  let drawing = false, addingText = false;
 
-    // Load PDF
-    fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const fileURL = URL.createObjectURL(file);
-      pdfDoc = await pdfjsLib.getDocument(fileURL).promise;
-      renderPage(currentPage);
-    });
+  // Load PDF
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const fileURL = URL.createObjectURL(file);
+    pdfDoc = await pdfjsLib.getDocument(fileURL).promise;
+    renderPage(currentPage);
+  });
 
-    async function renderPage(num) {
-      const page = await pdfDoc.getPage(num);
-      const viewport = page.getViewport({ scale });
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      const renderContext = { canvasContext: ctx, viewport: viewport };
-      await page.render(renderContext).promise;
-    }
+  async function renderPage(num) {
+    const page = await pdfDoc.getPage(num);
+    const viewport = page.getViewport({ scale });
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    const renderContext = { canvasContext: ctx, viewport: viewport };
+    await page.render(renderContext).promise;
+  }
 
-    // Add Text Box (editable)
-    document.getElementById('addText').addEventListener('click', () => {
-      const textBox = document.createElement('div');
-      textBox.contentEditable = true;
-      textBox.innerText = 'Type here';
-      textBox.style.position = 'absolute';
-      textBox.style.top = '100px';
-      textBox.style.left = '100px';
-      textBox.style.font = '16px Arial';
-      textBox.style.color = 'black';
-      textBox.style.cursor = 'move';
-      textBox.style.padding = '2px 4px';
-      textBox.style.background = 'rgba(255,255,255,0.5)';
-      textBox.draggable = true;
+  // Add text mode
+  document.getElementById('addText').addEventListener('click', () => {
+    addingText = true;
+    canvas.style.cursor = 'text';
+  });
 
-      textBox.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('text/plain', null);
-        const rect = textBox.getBoundingClientRect();
-        textBox.offsetX = e.clientX - rect.left;
-        textBox.offsetY = e.clientY - rect.top;
-      });
+  // Add text on click
+  canvas.addEventListener('click', (e) => {
+    if (!addingText) return;
+    const x = e.offsetX;
+    const y = e.offsetY;
+    createTextBox(x, y);
+    addingText = false;
+    canvas.style.cursor = 'default';
+  });
 
-      container.addEventListener('dragover', e => e.preventDefault());
-      container.addEventListener('drop', e => {
-        e.preventDefault();
-        const x = e.clientX - container.getBoundingClientRect().left - textBox.offsetX;
-        const y = e.clientY - container.getBoundingClientRect().top - textBox.offsetY;
-        textBox.style.left = ${x}px;
-        textBox.style.top = ${y}px;
-      });
+  function createTextBox(x, y) {
+    const textBox = document.createElement('div');
+    textBox.contentEditable = true;
+    textBox.innerText = 'Type here';
+    textBox.style.position = 'absolute';
+    textBox.style.left = ${x}px;
+    textBox.style.top = ${y}px;
+    textBox.style.font = '16px Arial';
+    textBox.style.color = 'black';
+    textBox.style.cursor = 'move';
+    textBox.style.padding = '2px 4px';
+    textBox.style.background = 'rgba(255,255,255,0.7)';
+    textBox.style.border = '1px dashed #888';
+    textBox.draggable = true;
 
-      container.appendChild(textBox);
-    });
+    // Drag logic
+    textBox.addEventListener('mousedown', (event) => {
+      if (event.target.isContentEditable) return;
+      let shiftX = event.clientX - textBox.getBoundingClientRect().left;
+      let shiftY = event.clientY - textBox.getBoundingClientRect().top;
 
-    // Draw Signature
-    document.getElementById('drawSign').addEventListener('click', () => {
-      alert("Draw your signature on the PDF canvas");
-      canvas.addEventListener('mousedown', startDraw);
-      canvas.addEventListener('mousemove', draw);
-      canvas.addEventListener('mouseup', endDraw);
-    });
-
-    function startDraw(e) {
-      drawing = true;
-      ctx.beginPath();
-      ctx.moveTo(e.offsetX, e.offsetY);
-    }
-    function draw(e) {
-      if (!drawing) return;
-      ctx.lineTo(e.offsetX, e.offsetY);
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-    function endDraw() {
-      drawing = false;
-      ctx.closePath();
-    }
-
-    // Clear Drawings
-    document.getElementById('clearDraw').addEventListener('click', () => {
-      renderPage(currentPage);
-      const textBoxes = document.querySelectorAll('#pdfContainer div');
-      textBoxes.forEach(box => container.removeChild(box));
-    });
-
-    // Save Edited PDF
-    document.getElementById('savePdf').addEventListener('click', async () => {
-      const pdfBytes = await pdfDoc.getData();
-      const pdfDocLib = await PDFLib.PDFDocument.load(pdfBytes);
-      const page = pdfDocLib.getPages()[0];
-      const { height } = page.getSize();
-
-      // Draw the canvas (signature/drawings)
-      const canvasImg = canvas.toDataURL('image/png');
-      const pngImage = await pdfDocLib.embedPng(canvasImg);
-      page.drawImage(pngImage, {
-        x: 0,
-        y: 0,
-        width: page.getWidth(),
-        height: height,
-      });
-
-      // Draw text boxes
-      const boxes = document.querySelectorAll('#pdfContainer div');
-      for (const box of boxes) {
-        const x = parseFloat(box.style.left);
-        const y = canvas.height - parseFloat(box.style.top);
-        page.drawText(box.innerText, {
-          x: x,
-          y: y - 10,
-          size: 16,
-        });
+      function moveAt(pageX, pageY) {
+        textBox.style.left = pageX - shiftX - container.getBoundingClientRect().left + 'px';
+        textBox.style.top = pageY - shiftY - container.getBoundingClientRect().top + 'px';
       }
 
-      const editedPdfBytes = await pdfDocLib.save();
-      const blob = new Blob([editedPdfBytes], { type: 'application/pdf' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'edited.pdf';
-      link.click();
+      function onMouseMove(event) {
+        moveAt(event.pageX, event.pageY);
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      textBox.onmouseup = function () {
+        document.removeEventListener('mousemove', onMouseMove);
+        textBox.onmouseup = null;
+      };
     });
-  </script>
+
+    // Delete with backspace when empty
+    textBox.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && textBox.innerText.trim() === '') {
+        e.preventDefault();
+        textBox.remove();
+      }
+    });
+
+    container.appendChild(textBox);
+    textBox.focus();
+  }
+
+  // Draw Signature
+  document.getElementById('drawSign').addEventListener('click', () => {
+    alert("Draw your signature on the PDF canvas");
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', endDraw);
+  });
+
+  function startDraw(e) {
+    drawing = true;
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+  }
+  function draw(e) {
+    if (!drawing) return;
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  function endDraw() {
+    drawing = false;
+    ctx.closePath();
+  }
+
+  // Clear Drawings
+  document.getElementById('clearDraw').addEventListener('click', () => {
+    renderPage(currentPage);
+    const textBoxes = document.querySelectorAll('#pdfContainer div');
+    textBoxes.forEach(box => container.removeChild(box));
+  });
+
+  // Save Edited PDF
+  document.getElementById('savePdf').addEventListener('click', async () => {
+    const pdfBytes = await pdfDoc.getData();
+    const pdfDocLib = await PDFLib.PDFDocument.load(pdfBytes);
+    const page = pdfDocLib.getPages()[0];
+    const { height } = page.getSize();
+
+    // Draw the canvas (signature/drawings)
+    const canvasImg = canvas.toDataURL('image/png');
+    const pngImage = await pdfDocLib.embedPng(canvasImg);
+    page.drawImage(pngImage, {
+      x: 0,
+      y: 0,
+      width: page.getWidth(),
+      height: height,
+    });
+
+    // Draw text boxes
+    const boxes = document.querySelectorAll('#pdfContainer div');
+    for (const box of boxes) {
+      const x = parseFloat(box.style.left);
+      const y = canvas.height - parseFloat(box.style.top);
+      page.drawText(box.innerText, {
+        x: x,
+        y: y - 10,
+        size: 16,
+      });
+    }
+
+    const editedPdfBytes = await pdfDocLib.save();
+    const blob = new Blob([editedPdfBytes], { type: 'application/pdf' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'edited.pdf';
+    link.click();
+  });
+</script> 
 </body>
     });
   </script>
